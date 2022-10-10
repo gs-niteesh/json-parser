@@ -17,6 +17,18 @@ class JSONTokenType(Enum):
     TRUE            = 10,
     FALSE           = 11,
 
+
+class NodeType(Enum):
+    JSON_OBJECT = 1,
+    JSON_ARRAY  = 2,
+    JSON_INT    = 3,
+    JSON_STRING = 4,
+
+class Node:
+    def __init__(self, type = None, children = []):
+        self.type = type
+        self.children = children
+
 class JSONToken:
     def __init__(self, value: str, x: int, y: int, tokenType: JSONTokenType):
         self.x = x
@@ -156,7 +168,6 @@ class JSONLexer:
 
         return self.tokens
 
-
 class JSONParser:
     def __init__(self):
         self.tokens = []
@@ -176,7 +187,6 @@ class JSONParser:
                    ' at [{self.current_token.y}, {self.current_token.x}]'
             raise Exception(msg)
 
-
     def expect_token(self, tokenType):
         if self.current_token.tokenType != tokenType:
             msg = f'Expected token {tokenType} but got {self.current_token.tokenType}' \
@@ -190,38 +200,29 @@ class JSONParser:
             self.expect_token(tokenType)
         self.cursor += 1
 
-    def parse_array(self) -> str:
-        arr = ''
+    def parse_array(self) -> Node:
+        children = []
 
         self.consume_token(JSONTokenType.BEGIN_ARRAY)
-        arr += '['
-
-        arr += self.parse_value()
+        children.append(self.parse_value())
         while self.current_token.tokenType != JSONTokenType.END_ARRAY and self.cursor < self.len:
             self.consume_token(JSONTokenType.VALUE_SEPERATOR)
-            arr += ', '
-            arr += self.parse_value()
-
+            children.append(self.parse_value())
         self.consume_token(JSONTokenType.END_ARRAY)
-        arr += ']'
-        return arr
+
+        return Node(NodeType.JSON_ARRAY, children)
 
     def parse_object(self) -> str:
-        arr = ''
+        children = []
 
         self.consume_token(JSONTokenType.BEGIN_OBJECT)
-        arr += '{'
-
-        arr += self.parse_member()
+        children.append(self.parse_member())
         while self.current_token.tokenType != JSONTokenType.END_OBJECT and self.cursor < self.len:
             self.consume_token(JSONTokenType.VALUE_SEPERATOR)
-            arr += ', '
-            arr += self.parse_member()
-
+            children.append(self.parse_member())
         self.consume_token(JSONTokenType.END_OBJECT)
-        arr += '}'
 
-        return arr
+        return Node(NodeType.JSON_OBJECT, children)
 
     def parse_member(self) -> str:
         arr = ''
@@ -274,6 +275,7 @@ def parse_file(path):
         try:
             tokens = JSONLexer().lex(data)
             JSONParser().parse(tokens)
+            print ('Parse Complete')
         except Exception as e:
             pprint.pprint(tokens)
             print (e)
@@ -294,4 +296,3 @@ def parse_value(value):
 if __name__ == "__main__":
     path = sys.argv[1]
     parse_file(path)
-    sys.exit(0)

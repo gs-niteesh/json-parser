@@ -1,5 +1,2 @@
 {
-    "one": true,
-    "two": [1, 2, 3],
-    "three": {"one": [1, 2, 3], "two": null}
-}
+    "execute": "query-cpu"
